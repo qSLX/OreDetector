@@ -16,7 +16,10 @@ import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.*;
+import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.game.state.GameStartingServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
@@ -52,6 +55,9 @@ public class OreDetector
 	int MinVerticalRange;
 	int MaxVerticalRange;
 	List<BlockType> DetectedBlocks;
+	double Volume;
+	double Pitch;
+	double FrequencyVerticalMultiplier;
 
 	@Listener
 	public void OnGamePreinitializationEvent(GamePreInitializationEvent aEvent)
@@ -88,6 +94,7 @@ public class OreDetector
 	@Listener
 	public void onServerStart(GameStartedServerEvent aEvent)
 		{
+		// Read config
 		MinHorizontalRange = GetConfigInt("MinHorizontalRange", 2, 1, 10);
 		MaxHorizontalRange = GetConfigInt("MaxHorizontalRange", 3, 1, 10);
 		MinVerticalRange = GetConfigInt("MinVerticalRange", 2, 1, 10);
@@ -111,6 +118,12 @@ public class OreDetector
 			MaxVerticalRange = Temp;
 			}
 
+		Volume = (double) (GetConfigInt("Volume", 20, 0, 100)) / 100;
+		Pitch = GetConfigDouble("Frequency", 440, 185, 740) / 370;
+		FrequencyVerticalMultiplier = GetConfigDouble("FrequencyVerticalMultiplier", 1.1, 1, 4);
+
+
+		// Scheduler
 		Sponge.getScheduler().createTaskBuilder().interval(2, TimeUnit.SECONDS).execute(new Runnable()
 			{
 			@Override
@@ -132,7 +145,16 @@ Searching:
 								BlockType lType = lTempLocation.getBlockType();
 								if (DetectedBlocks.contains(lType))
 									{
-									lPlayer.playSound(SoundTypes.BLOCK_NOTE_PLING, lTempLocation.getPosition(), 0.3, 2, 0.1);
+									double lPitch = Pitch;
+									if (y < 0)
+										lPitch /= FrequencyVerticalMultiplier;
+									else if (y > 1)
+										lPitch *= FrequencyVerticalMultiplier;
+
+									if (lPitch > 2)
+										lPitch = 2;
+
+									lPlayer.playSound(SoundTypes.BLOCK_NOTE_PLING, lTempLocation.getPosition(), Volume, lPitch);
 									break Searching;
 									}
 								}
@@ -176,6 +198,27 @@ Searching:
 	private int GetConfigInt(String aName, int aDefault, int aMin, int aMax)
 		{
 		int Result = fConfig.getNode(aName).getInt(aDefault);
+		if (Result < aMin)
+			{
+			Result = aMin;
+			}
+		else if (Result > aMax)
+			{
+			Result = aMax;
+			}
+		else
+			{
+			return Result;
+			}
+
+		fLogger.error("Config entry '" + aName + "' should be in range [" + aMin + ":" + aMax + "]");
+		fConfig.getNode(aName).setValue(Result);
+		return Result;
+		}
+
+	private double GetConfigDouble(String aName, double aDefault, double aMin, double aMax)
+		{
+		double Result = fConfig.getNode(aName).getDouble(aDefault);
 		if (Result < aMin)
 			{
 			Result = aMin;
