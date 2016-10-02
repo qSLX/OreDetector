@@ -16,10 +16,7 @@ import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
-import org.spongepowered.api.event.game.state.GameStartingServerEvent;
-import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
+import org.spongepowered.api.event.game.state.*;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
@@ -75,7 +72,7 @@ public class OreDetector
 		}
 
 	@Listener
-	public void OnGameStartingEvent(GameStartingServerEvent aEvent)
+	public void OnGameInitializationEvent(GameInitializationEvent aEvent)
 		{
 		HashMap<String, Boolean> lMap = new HashMap<String, Boolean>();
 		lMap.put("off", false);
